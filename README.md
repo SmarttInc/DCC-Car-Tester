@@ -39,17 +39,9 @@ firmware that fails to start is rolled back automatically on the next power
 cycle, and Settings > Advanced has a manual ROLL BACK button that boots the
 previous firmware at any time - nothing is erased in either direction.
 
-If this repository is private, a handheld needs its own fine-grained GitHub
-token (Contents: read-only, this repository only) on the SD card as
-`ota_token.txt` - it is imported once, then kept in the device's flash.
-
 ## What is in a release
 
 - `dcc_ir_handheld.bin` - the plain ESP-IDF app image, exactly what every
   update channel expects. No merged binary, no bootloader, no partition
   table.
 - The release notes are the matching section of the project's change log.
-
-Development happens in the DCC-Cars repository alongside the rest of the
-tool chain (vehicle decoder firmware, CV programmer, PC IR logger, and the
-Arduino IR analyzer).
