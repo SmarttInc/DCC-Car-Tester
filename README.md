@@ -7,14 +7,13 @@ stores them in flash, replays them from an on-screen remote pad, and serves a
 browser-based code editor over WiFi.
 
 <!-- RELEASE:BEGIN -->
-## Latest firmware: v0.2.56 (2026-08-21)
+## Latest firmware: v0.2.58 (2026-08-21)
 
-- Network speed test: GET `/speedtest` streams 1 MB to the browser, POST
-  `/speedtest` swallows an upload - raw TCP both ways, no TLS or flash in
-  the path, KB/s and signal strength in the log. For pinning down why
-  updates transfer slowly.
-- GitHub downloads log their rate every 256 KB and read TLS in whole
-  16 KB records instead of 4 KB fragments.
+- Every deliberate reboot now announces itself on the serial log first
+  (board_reboot, the web REBOOT button, the web ROLLBACK) - 0.2.57 was seen
+  restarting itself minutes after boot with nothing on the console, and a
+  silent software reset must be attributable. Power-save transitions are
+  also logged before the radio is asked, not only after they succeed.
 
 Download `dcc_ir_handheld.bin` from the [latest release](https://github.com/SmarttInc/DCC-Car-Tester/releases/latest), or on the handheld: **Settings > Firmware > CHECK ONLINE**.
 <!-- RELEASE:END -->
