@@ -7,15 +7,14 @@ stores them in flash, replays them from an on-screen remote pad, and serves a
 browser-based code editor over WiFi.
 
 <!-- RELEASE:BEGIN -->
-## Latest firmware: v0.2.55 (2026-08-20)
+## Latest firmware: v0.2.56 (2026-08-21)
 
-- Adaptive WiFi power save. The radio runs full speed while the device is in
-  use - screen lit, web page open (its 5 s poll counts), or an update
-  streaming - and drops to modem power save about a minute after the screen
-  goes dark and the web server goes quiet. First web request against a
-  sleeping radio is slow (that IS the wake-up signal); everything after runs
-  at full speed. Transitions are verified and logged
-  (`wifi power save -> ...`).
+- Network speed test: GET `/speedtest` streams 1 MB to the browser, POST
+  `/speedtest` swallows an upload - raw TCP both ways, no TLS or flash in
+  the path, KB/s and signal strength in the log. For pinning down why
+  updates transfer slowly.
+- GitHub downloads log their rate every 256 KB and read TLS in whole
+  16 KB records instead of 4 KB fragments.
 
 Download `dcc_ir_handheld.bin` from the [latest release](https://github.com/SmarttInc/DCC-Car-Tester/releases/latest), or on the handheld: **Settings > Firmware > CHECK ONLINE**.
 <!-- RELEASE:END -->
