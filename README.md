@@ -7,15 +7,33 @@ stores them in flash, replays them from an on-screen remote pad, and serves a
 browser-based code editor over WiFi.
 
 <!-- RELEASE:BEGIN -->
-## Latest firmware: v0.2.60 (2026-08-25)
+## Latest firmware: v0.2.62 (2026-08-25)
 
-- Web editor: the Tag column is now a checkbox menu - tick Remote, Car and
-  Module in any combination and the code carries the full membership list
-  ("Remote+Module"), matching the merged multi-source database.
-- Function-module category map corrected per hardware review (Hazard Lights
-  Off = Signals Off 00 65 65; Bus 1st Magnet = 00 39 39; Bus 2nd Magnet +
-  Hazard = 00 7D 7D; Lane pos 5 = Rear IR LEDs Off 00 3C 3C; Lane Control
-  Off = 00 3D 3D). All 216 browser rows now resolved.
+Changes since v0.2.60 :
+
+## 0.2.62 - 2026-08-25
+- Online download: reads sized to the CDN's 16 KB TLS records (heap buffer),
+  and the log now prints a time-accounting split at the end - how many ms
+  went to network/TLS vs flash writes vs everything else - so download-speed
+  questions get answered with numbers instead of theories.
+
+## 0.2.61 - 2026-08-25
+- CHECK ONLINE now asks first: it reports "Version x.y.z found" in a centered
+  popup with INSTALL / NOT NOW, and downloads nothing until you confirm.
+- Any device-firmware install (online, SD, or web upload) locks the handheld
+  behind a full-screen "Updating firmware - DO NOT power off" popup with
+  progress, and the web editor shows a matching "Update in progress" overlay
+  - including installs started from the other side.
+- Successful installs RESTART THE HANDHELD AUTOMATICALLY; the manual
+  "reboot into new firmware" button is gone from both UIs.
+- The Module area is now a category browser, styled after the official
+  function-module app: the A-U categories with colored letter badges and
+  dipswitch labels, each opening its 8 clearly-named commands - tap to arm,
+  HOLD to transmit. Commands already captured use their recorded raw
+  timings; the rest are added to the database on first use and transmit as
+  synthetic frames. "All captured codes" keeps the flat list one tap away.
+- release.ps1: release notes now cover EVERY changelog section since the
+  previous GitHub release, so skipped versions tell their full story.
 
 Download `dcc_ir_handheld.bin` from the [latest release](https://github.com/SmarttInc/DCC-Car-Tester/releases/latest), or on the handheld: **Settings > Firmware > CHECK ONLINE**.
 <!-- RELEASE:END -->
