@@ -7,19 +7,15 @@ stores them in flash, replays them from an on-screen remote pad, and serves a
 browser-based code editor over WiFi.
 
 <!-- RELEASE:BEGIN -->
-## Latest firmware: v0.2.67 (2026-08-26)
+## Latest firmware: v0.2.68 (2026-08-26)
 
-- Module category list is browse-only: nothing stays armed there and the
-  HOLD button is gone from that page - transmitting happens inside a
-  category (or the flat list), never from the list of categories.
-- Selection is no longer sticky: backing out of a category disarms, so
-  opening another category never shows a command pre-armed just because it
-  shares a wire code with what you sent last. Switching to the Module tag
-  always lands on the category list, never on a page left open earlier
-  with another area's code still armed.
-- Inside a category the header is now a real heading - solid category
-  colour, large type, no border - and BACK is a full-width blue button at
-  the top instead of a row styled like the commands.
+- Boot no longer trips the task watchdog. "Building the interface" ran
+  ~8.6 s in one uninterrupted main-task stretch under the LVGL lock, which
+  starved the idle task past its 5 s limit and dumped registers mid-boot
+  (harmless - boot continued - but slow-looking and alarming). The build
+  now yields between sections, and each section logs its cost
+  ("ui: built settings in ... ms") so the next slow boot names the actual
+  hog instead of hiding it inside one anonymous 8-second step.
 
 Download `dcc_ir_handheld.bin` from the [latest release](https://github.com/SmarttInc/DCC-Car-Tester/releases/latest), or on the handheld: **Settings > Firmware > CHECK ONLINE**.
 <!-- RELEASE:END -->
