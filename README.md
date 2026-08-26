@@ -7,19 +7,19 @@ stores them in flash, replays them from an on-screen remote pad, and serves a
 browser-based code editor over WiFi.
 
 <!-- RELEASE:BEGIN -->
-## Latest firmware: v0.2.66 (2026-08-26)
+## Latest firmware: v0.2.67 (2026-08-26)
 
-- CHECK ONLINE no longer reports "nothing published" when it never reached
-  GitHub at all. A TLS/TCP connect failure now says so ("could not connect
-  to the update server") and logs how much internal RAM was free at that
-  moment - the field failure it hides was mbedtls_ssl_setup -0x008D, which
-  is PSA "insufficient memory" at TLS session setup, not an empty repo.
-- The root cause is fixed in the build config: mbedTLS now allocates from
-  PSRAM (CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC). A TLS session needs ~40-50 KB
-  during the handshake; from internal RAM it competed with the C6 radio
-  link's receive pool for the last few KB. This also permanently retires
-  the "RX buffer alloc failed at full download speed" class - TLS no longer
-  takes part in that fight. Requires a full rebuild to take effect.
+- Module category list is browse-only: nothing stays armed there and the
+  HOLD button is gone from that page - transmitting happens inside a
+  category (or the flat list), never from the list of categories.
+- Selection is no longer sticky: backing out of a category disarms, so
+  opening another category never shows a command pre-armed just because it
+  shares a wire code with what you sent last. Switching to the Module tag
+  always lands on the category list, never on a page left open earlier
+  with another area's code still armed.
+- Inside a category the header is now a real heading - solid category
+  colour, large type, no border - and BACK is a full-width blue button at
+  the top instead of a row styled like the commands.
 
 Download `dcc_ir_handheld.bin` from the [latest release](https://github.com/SmarttInc/DCC-Car-Tester/releases/latest), or on the handheld: **Settings > Firmware > CHECK ONLINE**.
 <!-- RELEASE:END -->
