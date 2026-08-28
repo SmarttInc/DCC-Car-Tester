@@ -7,15 +7,49 @@ stores them in flash, replays them from an on-screen remote pad, and serves a
 browser-based code editor over WiFi.
 
 <!-- RELEASE:BEGIN -->
-## Latest firmware: v0.2.68 (2026-08-26)
+## Latest firmware: v0.2.70 (2026-08-28)
 
-- Boot no longer trips the task watchdog. "Building the interface" ran
-  ~8.6 s in one uninterrupted main-task stretch under the LVGL lock, which
-  starved the idle task past its 5 s limit and dumped registers mid-boot
-  (harmless - boot continued - but slow-looking and alarming). The build
-  now yields between sections, and each section logs its cost
-  ("ui: built settings in ... ms") so the next slow boot names the actual
-  hog instead of hiding it inside one anonymous 8-second step.
+Changes since v0.2.68 :
+
+## 0.2.70 - 2026-08-28
+- The IR Receiver is now IDENTIFY-ONLY by default. Every layout signal is
+  known - the code database, the baked module map, and the verified
+  vehicle broadcast model (number 0x80+N, type 0xC0+T, battery 0xE0+B on
+  address 00) - so packets nothing recognizes are counted and ignored
+  instead of flooding the table. A floating sensor input (op-amp with no
+  sensor attached) used to manufacture endless false-positive rows; now
+  the Read screen shows a quiet grey "unknown signals ignored: N" line
+  and nothing else. Dropped bursts no longer flash the card either.
+- Vehicle broadcasts identify THEMSELVES: a car's announcements appear
+  named - "Vehicle #3", "Vehicle Type 14", "Battery status 7" - tagged
+  Car, straight from the verified model, no capture session needed.
+- Recording NEW signals moved to Settings > Advanced > "Capture unknown
+  signals" - session-only like admin mode, always off after a reboot.
+  While capture is off, the ignored counter points there.
+
+## 0.2.69 - 2026-08-26
+- Updates hold everything awake. The screen-off timer already refused to
+  fire mid-update; now the radio's power-save governor is also pinned to
+  full speed while an update is in flight - before, a STALLED download on
+  a dark screen stamped no network activity, so after 60 s the radio could
+  legally doze to MIN_MODEM (6x the round-trip) right when the stall
+  needed full speed to recover. And if an install starts while the device
+  is in standby (webui upload to a dark screen), the screen now wakes so
+  the "DO NOT power off" lockout is actually visible.
+- WiFi disconnects now log WHY: the C6's reason code with a name for the
+  usual suspects (AP idle-kick, beacon timeout, auth fail ...). A bare
+  "Station mode: Disconnected" - like the one 18 s after entering power
+  save on 2026-08-26 - was undiagnosable.
+- DHCP watchdog escalates sooner: one DHCP restart (12 s), then a fresh
+  association at 24 s instead of 36 - field data showed restarts bought
+  nothing and only the re-associate moved things. Warnings now include
+  RSSI so a weak link is visible while the lease is not coming.
+- A re-associate the DHCP watchdog itself requested no longer counts
+  toward the 4-strike retry limit (the credentials are proven good - we
+  were associated). Before, a router whose DHCP stayed quiet for about
+  two minutes would strand the handheld in "join failed" until someone
+  reconnected by hand; now it keeps retrying indefinitely, while real
+  auth failures still stop after 4 tries.
 
 Download `dcc_ir_handheld.bin` from the [latest release](https://github.com/SmarttInc/DCC-Car-Tester/releases/latest), or on the handheld: **Settings > Firmware > CHECK ONLINE**.
 <!-- RELEASE:END -->
