@@ -7,108 +7,102 @@ stores them in flash, replays them from an on-screen remote pad, and serves a
 browser-based code editor over WiFi.
 
 <!-- RELEASE:BEGIN -->
-## Latest firmware: v0.3.2 (2026-09-08)
+## Latest firmware: v0.4.0 (2026-09-08)
 
-Changes since v0.2.86 :
+Changes since v0.3.2 :
 
-## 0.3.2 - 2026-09-08
-- PERF: receiving from a CONTINUOUS emitter (a function module, the rear
-  beacon, the speed-beacon Arduino) made the UI sluggish and delayed the
-  on-screen result by seconds. Cause: every ~79 ms burst rebuilt the whole
-  Read table (~370 cell writes at ~6.6 Hz on the software renderer).
-  Air-driven repeat updates (count/agree ticks) are now coalesced to ~2
-  rebuilds/s; structural changes (new code, edits, selection, imports)
-  still rebuild immediately, and the big result card still updates on
-  EVERY burst - so a code shows up within a tick or two of clean optical
-  alignment, and the screen stays responsive while codes stream in.
+## 0.4.0 - 2026-09-08
+- IR RECEIVER redesigned as a reception monitor (field request, with
+  mockup). The page no longer builds the saved-code table at all - it
+  opens instantly - and shows reception as FRAMES: a headline card
+  (code name for a lone code, "Frame: N codes" for a volley, wall time,
+  packet count), a CODES IN THIS FRAME list - numbered tag-colored
+  badge, resolved name, raw hex, per-frame repeat count, XOR/agreement,
+  tag - a RAW FRAME DATA strip in exact arrival order, and RECENT
+  FRAMES history (last 8; consecutive identical frames collapse into a
+  repeat counter instead of flooding at the 79 ms slot rate). Bursts
+  landing within 300 ms group into one frame - an MF5 identity volley
+  reads as one frame of Number + Type + Battery; 300 ms of quiet
+  closes it. Record/Delete/Export left the page.
+- NEW: CODE LIBRARY page (Home > CODE LIBRARY) - the full saved-code
+  table plus the tag/name editor and RECORD / Delete / Export, moved
+  from the Receiver. The table builds only when the page opens and only
+  rebuilds when the database changed, so the old table cost is paid
+  there, lazily, not on the Receiver. Live-RX green row and blue
+  selected row behave as before; IR capture stays active here so Seen
+  counts keep climbing while you name things.
+- NEW Advanced switch "Tap-to-edit from the Receiver" (session-only,
+  default OFF, like Capture/Admin): when ON, tapping a code row in the
+  frame view jumps to that code in the Library editor - the bridge that
+  keeps the capture-a-new-code workflow one tap long.
+- Back button reworked (field request: too hard to hit): no longer in
+  the top bar - now a 96 px floating disc pinned bottom-left on every
+  inner page, above the content, hidden while the keyboard is up. Pages
+  reserve bottom padding so nothing hides under it.
+- Home: DEVICE READY / WiFi strip moved to the TOP (field request);
+  launcher cards resized to fit the new CODE LIBRARY row.
+- Vehicle identity volleys no longer take over the headline card with
+  the 3-column CAR TYPE/# panel - the frame rows carry the same facts;
+  the Car composer's "last detected" line still updates as before.
+- FIX (field report): screen-timeout standby left the BACKLIGHT lit
+  behind a black panel. The BSP's panel-sleep hook stops the LCD
+  controller but the LED backlight is a separate PWM rail it never
+  touches - standby now forces brightness to 0 explicitly on entry
+  (wake already restored the user's setting), reclaiming the single
+  biggest battery load while "asleep".
 
-## 0.3.1 - 2026-09-08
-- About gains a "Last rst" line naming why the current boot happened
-  (BROWNOUT / POWERON / SW / watchdog...). Purpose: the single-USB-unplug
-  restart can now be confirmed as a brownout from the screen alone - no
-  cable, no monitor. (Policy refinement: added informational text counts
-  as PATCH; MINOR stays for layout/control changes.)
-- Diagnosis recorded: the unplug restart is BY DESIGN on this board - the
-  battery boost converter (SCT12A0) is held disabled by Q5 whenever USB 5V
-  is present, and only starts - through a soft-start ramp - after the rail
-  has already collapsed. Firmware cannot bridge it; bulk capacitance
-  cannot either (the boost waits for the rail to DIE before starting).
-  See the reply / notes for the two real options.
+## 0.3.5 - 2026-09-08
+(No firmware changes in the sim items below - sim work does not bump the
+firmware version.)
 
-## 0.3.0 - 2026-09-04
-- VERSIONING POLICY, adopted from here forward: MAJOR.MINOR.PATCH where
-  MINOR bumps whenever something the user SEES or TOUCHES changes (layout,
-  pages, controls, displayed values) and PATCH covers everything internal
-  (fixes, protocol work, power, drivers). No retroactive recount - the
-  changelog itself is the historical record of what each release touched;
-  0.2.92 simply becomes the last of the old numbering. The updater
-  compares release tags by equality, so the scheme change cannot confuse
-  OTA.
-- Car page fills the screen edge to edge: the identity and REAR/BRAKE
-  cards share the page 3:2, the composer value boxes absorb the identity
-  card's share, and the rear card's growth goes into a much taller
-  tappable gauge (easier to hit an exact step) and a 72 px brake button.
-  No dead space at the bottom.
+- Simulator synced to the current handheld. The scenario now feeds a rear
+  brake code into the Receiver session (proving the "Rear: braking @ step
+  N" resolver end-to-end in read.png), ticks once per burst like the real
+  device so vehicle rows pick up their names, and screenshots the About
+  card (about.ppm) via a new ui_cfg_scroll_bottom() sim hook. The sim
+  build's About now mirrors the device's Battery and "Last rst" lines
+  through the host stubs instead of omitting them.
+- NEW sim/build-sim.bat: builds the simulator on Windows (needs a
+  MinGW-w64 gcc on PATH; clones LVGL v9.2.2 automatically the first
+  time). Default build = the INTERACTIVE simulator: ui-sim.exe opens a
+  live 720x1280 window of the real UI (mouse = touch) using LVGL's
+  built-in Win32 driver - no SDL2 or any other library to install. The
+  window auto-zooms to fit the desktop (override: `ui-sim.exe 100` for
+  25..200%), and the floating demo-traffic buttons include a new ~Rear
+  that injects a descending brake ramp (24, 20, ... 0/STOP, wrap 28) to
+  exercise the Car page's REAR strip by hand. `build-sim.bat headless`
+  builds ui-sim-headless.exe, which writes the *.ppm screenshot set and
+  exits. Startup works around a v9.2 Win32-driver flaw (framebuffer is
+  wired in lazily on a 200 ms timer while LVGL's refresh timer pauses
+  itself when it runs too early -> permanently black window): the sim
+  forces the framebuffer in at the real panel size before frame one.
+- lv_conf.h: LV_USE_OS, LV_USE_WINDOWS and LV_USE_LOG are #ifndef-guarded
+  so the Windows build can switch them from the compiler command line;
+  app-side LVGL calls in the interactive sim take lv_lock()/lv_unlock()
+  (no-ops in the SDL/headless builds).
 
-## 0.2.92 - 2026-09-04
-- Car page reorganized into two cards. IDENTITY card: the Type/#/Battery
-  composer at half its former height, with its Last detected line, COPY,
-  and SEND VEHICLE BURST all inside the same card. REAR/BRAKE card below:
-  the STOP..28 gauge, its OWN "Last detected: step N (00 XX XX)" line
-  (written only by real captures - tapping the bar changes the armed step
-  but never the detection record), and HOLD TO BRAKE.
+## 0.3.4 - 2026-09-08
+- PRIORITY FIX - seconds-late reception on the Receiver page: the RMT
+  capture only delivered a transaction on 6 ms of idle OR a full 512-symbol
+  buffer. A noisy front end (edges < 6 ms apart continuously) kept the
+  transaction open, so a lone remote frame sat captured-but-undelivered
+  until noise filled the buffer - about 5 s. The brake ramp looked instant
+  because its strong repeating stream filled the buffer quickly; that was
+  the tell. RX now uses PARTIAL RECEIVE (IDF en_partial_rx) with a
+  128-symbol chunk buffer: chunks stream to the decoder as they arrive,
+  and the true burst end is flagged by is_last at the 6 ms idle - so a
+  quick remote press shows within a tick or two, and long MF5 volleys
+  simply span several chunks. Worst-case delivery under continuous noise
+  is bounded by 128 symbols (~1 s) instead of 512 (~5 s).
 
-## 0.2.91 - 2026-09-04
-- REAR / BRAKE strip on the Car composer: a STOP..28 gauge shows the last
-  rear brake code received (live enough to watch a ramp if the sensor
-  holds steady), the amber readout names the step, and the bar is TAPPABLE
-  to pick a step by hand - so the transmit half works even without a
-  capture. HOLD TO BRAKE repeats the shown code exactly like a real stop
-  emitter for as long as it is pressed (00 5C 5C at STOP), separate from
-  SEND VEHICLE BURST. Transmits ride the existing hold machinery with a
-  new raw-code path (no database entry needed).
-
-## 0.2.90 - 2026-09-04
-- SD FIX (field incident): reinserting a card that would not initialize
-  was probed forever; the 41st probe wedged the SHARED SDMMC controller
-  and took the C6 radio link down with it (sdio_read watchdog storm).
-  The insertion watcher now stops after 3 failed probes ("auto-detect
-  off - press CHECK CARD" on the Storage card); CHECK CARD re-arms it.
-  A card that fails three probes is misbehaving, not slow.
-- Rear-code semantics per field decode: labels are now "Rear: braking @
-  step N" / "Rear: brake to STOP" (these transmit the LIVE step during
-  braking/re-acceleration, followers brake in sympathy). Linear mapping
-  step = 0x5C - code CONFIRMED by example (00 52 52 = step 10). car.csv
-  rows renamed to match - recopy to the SD card.
-
-## 0.2.89 - 2026-09-04
-- NEW VEHICLE CODES: the rear emitter's speed-status broadcasts
-  (00 40 40 .. 00 5C 5C: 0x40 = full speed, 0x5C = stop, step =
-  0x5C - code) are now recognized by the identify-only resolver and named
-  "Rear: speed step N" / "Rear: STOP (step 0)". Until now these were
-  silently dropped as unknown. car.csv gained 29 matching rows (recopy it
-  to the SD card if you want them name-editable in the database too).
-
-## 0.2.88 - 2026-09-04
-- IR RECEIVER ON DEMAND: capture channels are now disabled whenever nothing
-  on screen consumes them, and re-enabled the moment something does. The
-  receiver runs on the Receiver page, on the Car composer (its
-  last-detected readout), and during a Settings > Advanced capture-unknown
-  session - everywhere else (home, Remote/Module transmit, Settings,
-  standby) the RMT channels are off and IR edges cost zero CPU. Noise
-  storms on an idle page no longer burn cycles at priority 10.
-- Driver: ir_rmt_rx_pause()/resume() with a race-tolerant receive loop
-  (a receive that loses against a pause backs off instead of panicking).
-
-## 0.2.87 - 2026-09-04
-- UPDATE FOCUS: the five OTA worker tasks (check-online, URL install, SD
-  install, radio flash) now run at priority 12 - ABOVE the IR receive
-  task's 10 - so a download preempts IR work instead of the reverse. On
-  top of that, both IR callbacks drop edges at the door while an install
-  is running: a noisy bench can deliver thousands of edges a second, and
-  none of that decode work now competes with the transfer. (What already
-  existed and stays: power-save pinned off, RSSI poller paused, screen
-  held awake, web page self-suspends its polling.)
+## 0.3.3 - 2026-09-08
+- Smoother scrolling: while a drag or momentum scroll is in flight, ALL
+  periodic label rewrites are deferred (WiFi status line, OTA status, the
+  2-second live About rebuild - the worst offender, a large multiline
+  label invalidated every time the battery millivolts wiggled). Each
+  rewrite stole render time from scroll frames, which read as jerkiness -
+  worst on Settings, the widget-densest page. Updates resume one tick
+  after the finger lifts and the throw settles.
 
 Download `dcc_ir_handheld.bin` from the [latest release](https://github.com/SmarttInc/DCC-Car-Tester/releases/latest), or on the handheld: **Settings > Firmware > CHECK ONLINE**.
 <!-- RELEASE:END -->
