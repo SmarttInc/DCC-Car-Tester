@@ -7,169 +7,53 @@ stores them in flash, replays them from an on-screen remote pad, and serves a
 browser-based code editor over WiFi.
 
 <!-- RELEASE:BEGIN -->
-## Latest firmware: v0.5.8 (2026-09-15)
+## Latest firmware: v0.5.9 (2026-09-15)
 
-Changes since v0.5.0 :
-
-## 0.5.8 - 2026-09-15
-- WIRE CODES ARE NOW LIBRARY-ONLY. Raw hex ("00 60 60") is gone from
-  every operating page - it told an operator nothing the name doesn't say
-  better. Cleared from: the Receiver's frame card and its per-code rows
-  and RECENT FRAMES lines; the Transmitter's Armed / TRANSMITTING status,
-  its code list rows and the Module command rows (which now read "raw
-  replay" / "Z frame" instead of code + tag); the remote pad's assign
-  sheet and transmit hint; the Module alias box headline; and the Car
-  page's braking status, last-detected line and battery buttons. The
-  CODE LIBRARY keeps its Bytes column - that page exists to show them.
-  - ONE DELIBERATE EXCEPTION: a code with NO NAME has no other identity,
-    so its bytes stand in AS the name rather than as an extra column.
-    Blanking those would have left unnamed and undecoded captures as
-    identical empty rows on the Receiver - useless exactly when the
-    analyzer matters most.
-  - The Car page's battery token now reads as its decoded index
-    ("Battery 0" / "Battery 7") rather than the E0/E7 wire nibble: the
-    good/bad meaning of those values is still unproven, so the number
-    stands on its own without asserting a mapping.
-- Module category pages now use the FULL page height. Inside an open
-  category the floating Back bar is hidden (0.4.2) but the page still
-  reserved its 120 px gutter, which pushed HOLD TO TRANSMIT up off the
-  bottom edge. That space goes to the command list, which is flex-grow
-  and absorbs all of it - roughly one more command row visible, and the
-  status line and HOLD button sit at the true bottom.
-- Fixed: the brake status line read "braking @ step" with the step
-  number missing entirely (the value was never formatted in).
-
-## 0.5.7 - 2026-09-15
-- The Car page's "Lane:" readout was STICKY (field report): a plain brake
-  signal arriving after a lane-wrapped one left the previous lane on
-  screen, so there was no way to tell an unassigned rear emitter from an
-  assigned one. 0.5.6 updated the readout only when a lane marker
-  decoded - nothing ever cleared it.
-  Lane assignment is now read as a property of THE BURST, exactly as the
-  signal defines it: the whole burst is walked first, then the brake step
-  and its lane are published together. A step sandwiched between lane
-  markers shows its lane in green; a brake code arriving alone - or two
-  brake codes with no marker - shows "Lane: UNASSIGNED" in grey. Before
-  any rear signal at all the readout stays "Lane: -".
-- The rear card's "Last detected" line now records the lane too, e.g.
-  "Last detected: step 10 (00 52 52) +lane RIGHT", so the log line and
-  the gauge can never disagree.
-- Sim scenario gained a regression guard for this exact case: a plain
-  brake burst fed immediately after a lane-wrapped one, screenshotted
-  (transmit_rear_plain.ppm) - it must read UNASSIGNED.
-
-## 0.5.6 - 2026-09-14
-- LANE ASSIST support in the Car composer's REAR/BRAKE strip, from four
-  scope captures (Right/Middle/Left/Special Lane Assist.csv) decoded and
-  XOR-verified: a lane-assigned rear emitter wraps its brake step in a
-  3-packet volley - lane marker, rear step, lane marker - with one-hot
-  lane codes 00 A1 A1 = Right, A2 = Middle, A4 = Left, A8 = Special
-  (e.g. Right @ step 28 = A1, 40, A1).
-  - RECEIVED row gains a live "Lane: RIGHT/MIDDLE/LEFT/SPECIAL" readout
-    next to the step gauge, so you can see whether the car's rear
-    emitter is transmitting with a lane assignment and which one.
-  - A LANE ASSIST picker (Off / Right / Middle / Left / Special) above
-    the RECEIVED row: with a lane selected, HOLD TO BRAKE transmits the
-    same 3-packet volley instead of the bare step code.
-  - The identify-only resolver now recognizes the 00 Ax Ax family, so
-    lane markers are accepted (not dropped as unknown) and auto-name
-    themselves "Lane Assist Right/..." in the Library.
-
-## 0.5.5 - 2026-09-14
-- Module browser: the top/bottom fade overlays now show ONLY while there
-  is actually content hidden on their side. At the top of the list the
-  top fade is gone (it was veiling half of the first category button),
-  at the end of the list the bottom fade is gone, and a list short
-  enough to fit entirely shows neither. Visibility tracks the scroll
-  position live.
-
-## 0.5.4 - 2026-09-14
-- FIXES THE CAR-PAGE HARD FREEZE (field report: heavy transmitting on the
-  Remote page, TX "stopped", then the Car page locked up completely).
-  The Car page's SEND button called the blocking transmit STRAIGHT FROM
-  ITS LVGL CALLBACK - the exact thing the transmit engine's own comment
-  forbids - and its final wait waits for an EMPTY transmit queue. With
-  HOLD TO BRAKE (or any held key) continuously refilling that queue, the
-  wait never returned and the whole UI froze until reset. The SEND
-  callback now only BUILDS the volley; the transmit task sends it and
-  frees the buffers. A second SEND while one is queued reports "busy".
-- The transmit path is hardened three ways in ir_rmt.c: a mutex
-  serializes transmitters (two contexts used to race the shared symbol
-  buffer WHILE the encoder was still streaming from it - corrupted
-  frames, and the likely reason TX "just stopped"); the final wait is
-  bounded by the volley's actual airtime + 500 ms instead of forever;
-  and a refused or stuck transmit resets the RMT channel (disable +
-  enable purges a wedged loop transmission), so TX heals itself and
-  logs "resetting the transmit channel" instead of staying dead.
-
-## 0.5.3 - 2026-09-14
-- FIXES THE FIX: 0.5.2's background free-space scan ran at priority 4 -
-  ABOVE LVGL's two software render threads (priority 3). Instead of
-  freezing Settings like 0.5.1, the multi-second cluster count now stole
-  a render core, which read as a LOWER frame rate across pages (field
-  report: second Settings visit slower than the first, Library scroll
-  sluggish). The worker now runs at priority 1 - below everything that
-  draws - so the count only soaks up idle CPU.
-- The count also ran on EVERY Settings open. Free space only changes
-  when the card does: the result is cached and repaints instantly; a
-  fresh count runs only when marked stale - boot, card insert/remove,
-  an import, or the CHECK CARD button. While re-counting, the card
-  keeps showing the previous numbers instead of "Checking ...".
-
-## 0.5.2 - 2026-09-14
-- SETTINGS NO LONGER CRAWLS ON FIRST OPEN (field report: first visit
-  near-unusable - the page "slowly scrolls" - second visit fine). Root
-  cause: every Settings open ran the Storage card's free-space query on
-  the LVGL thread, and esp_vfs_fat_info() counts EVERY free cluster on
-  the card - seconds on a big card, during which touches queued up. The
-  second visit was only fast because FATFS caches the count once it has
-  been computed. The count now runs in a one-shot background task; the
-  card shows "Checking ..." and fills in when the answer lands.
-- CODE LIBRARY opens fast (same field report): entering the page was
-  rebuilding the whole table TWICE (once on entry, then the stale dirty
-  flag triggered a second full rebuild one tick later), and each rebuild
-  grew the table row by row - an internal realloc of the whole cell array
-  per added row. The table is now pre-sized in one shot, refills only
-  when something actually changed since the last fill (a new code, an
-  edit, a db import, or Seen counts that moved while a receiving page
-  was up), and re-entering an unchanged Library costs nothing.
-- Tapping a Library row no longer rebuilds the table just to move the
-  highlight - the row repaints in place (this was tap lag).
-- Another ~8 KB of internal RAM reclaimed (continuing 0.5.1's work, and
-  widening the deep-sleep build's boot margin): the record-commit timing
-  string (3.6 KB), the transmit task's frame buffers (1.8 KB) and the
-  WiFi scan record buffer (2.9 KB) now live in PSRAM.
-
-## 0.5.1 - 2026-09-14
-- FIXES THE 0.5.0 BOOT LOOP (assert at port_common.c:53 - the idle task's
-  stack failed to allocate before the scheduler even started). Root cause,
-  proven by on-device heap probes: esp_hosted runs its ENTIRE host init
-  from a C constructor and eats ~99 KB of internal RAM pre-scheduler
-  (127 KB free at core-init -> 28 KB after the constructor pass, largest
-  block 26 KB, small allocations already spilling into RTCRAM and TCM).
-  0.5.0's deep-sleep support linked ~10 KB of additional static internal
-  RAM (PMU/sleep-retention suite), which pushed the leftovers below what
-  the idle task needs. Not corruption, not sleep code misbehaving - plain
-  internal-RAM exhaustion at the worst possible moment.
-- Reclaimed 16 KB of internal RAM to fix it, with margin: the OTA task's
-  two 4 KB download buffers (main/ota.c) and the DB parser's two 4 KB CSV
-  line buffers (main/db.c) were static internal .bss predating the "no
-  big buffers off the internal heap" rule; all four now lazily allocate
-  from PSRAM on first use.
-- The deep-sleep tail of board_poweroff() is compiled out for this build
-  (DCC_POWEROFF_DEEPSLEEP=0): auto power-off still runs the full shutdown
-  (WiFi stop, panel sleep, backlight off, C6 held in reset) then parks in
-  an idle loop instead of entering deep sleep. Flip the define to 1 after
-  the bench run confirms the reclaim covers the sleep suite's footprint.
-- Boot log now prints two "heap-probe" lines (core-init and ctor-pass)
-  showing internal-heap free/largest before and after the constructor
-  pass - the early-warning gauge for this failure class. Harmless to
-  leave in; they cost microseconds.
-- Build system: after "idf.py fullclean", ninja refused to build with
-  "unknown target ...dcc_ir_handheld.bin". The bin/ copy step depended on
-  the app .bin FILE, which has no named producer rule on a clean tree; it
-  now depends on the gen_project_binary TARGET (latent since the copy
-  step was added - incremental trees masked it).
+- FIXES A CRASH-WHILE-IDLE, and the "could not start the update task" /
+  "could not connect to the update server" failures with it. All three
+  were the same illness. Field logs 2026-09-15, fresh boot:
+    heap-probe[ctor-pass]: free=52364 largest=31744     (healthy)
+    ota: connect failed ... (internal heap 9459 free, largest block 3072)
+    H_SDIO_DRV: RX buffer alloc failed (len=3072); dropping read
+    rpc_core: Timeout waiting for Resp for [0x101](Req_GetMACAddress)
+    Guru Meditation Error: Core 0 panic'ed (Load access fault)
+    MEPC: rpc_wifi_get_ps at rpc_wrap.c:1708   MTVAL: 0x00000010
+  Internal RAM is fine at boot but collapses to ~9 KB free / 3 KB largest
+  once WiFi and the web editor are up. The SDIO driver then cannot get
+  the 3 KB buffer it needs, drops reads, and RPC responses are lost - at
+  which point esp_hosted 2.12.12 walks a NULL response struct (a load
+  from address 0x10) and panics. The network was never broken; it was
+  starved. Three fixes, attacking it at every level:
+- NO MORE esp_wifi_get_ps(). The power-save governor confirmed each
+  transition with a read-back, and that read-back IS the crash site -
+  hosted's get_ps wrapper does not null-check its response. The
+  component's version is pinned to the C6 firmware and cannot be
+  patched, so the defence is to not make the call: set_ps's own return
+  code is the answer now. (Same family as the hosted_memcpy(src=NULL)
+  panic fixed in 0.5.0 - a different wrapper with the same hole.)
+- The MAC address is asked for ONCE and cached. A MAC cannot change,
+  but the About card rebuilt this line every 2 s while Settings was
+  open - firing Req_GetMACAddress at the C6 forever, on the one page
+  where CHECK ONLINE lives. The log shows the cost: a timeout every 5 s,
+  each stalling its caller for the full 5 s, all of it congesting a link
+  that was already dropping reads. RSSI polling is likewise backed off
+  10 s -> 30 s and skipped while the screen is off.
+- esp_hosted's task stacks move to PSRAM
+  (CONFIG_ESP_HOSTED_DFLT_TASK_FROM_SPIRAM), freeing the internal RAM
+  the SDIO buffers are allocated from - hosted runs several tasks at
+  5120 bytes each. This is a DIFFERENT knob from the transport mempool,
+  which stays internal and must: the SDMMC controller can only DMA out
+  of internal RAM (see the note in sdkconfig.defaults). A task stack is
+  only ever touched by the CPU, and .text already runs XIP from PSRAM on
+  this board, so PSRAM is live whenever code is.
+- OTA workers now retry once after yielding, and say why when they still
+  fail. A finished OTA task self-deletes, and a self-deleted task's stack
+  is reclaimed by the IDLE task, not the scheduler - tapping the button
+  again can beat the reaper to it, so a brief yield recovers memory that
+  was already free in all but name. If it still fails the message now
+  carries the numbers ("needs 10240 bytes, largest free block is 3072"),
+  which separates "out of memory" from "fragmented" without a serial
+  cable.
 
 Download `dcc_ir_handheld.bin` from the [latest release](https://github.com/SmarttInc/DCC-Car-Tester/releases/latest), or on the handheld: **Settings > Firmware > CHECK ONLINE**.
 <!-- RELEASE:END -->
